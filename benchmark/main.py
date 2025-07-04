@@ -5,7 +5,7 @@ from timeit import repeat
 
 
 def run(
-    func: Callable[..., Any], n_warmup: int = 2, n_iters: int = 10
+    func: Callable[..., Any], n_warmup: int = 1, n_iters: int = 5
 ) -> float:
     nums = 10
     times = repeat(func, number=nums, repeat=n_iters)
@@ -13,9 +13,9 @@ def run(
 
 
 def benchmark(func: Callable[[np.ndarray, np.ndarray], np.ndarray], name: str):
-    M = 1024
-    a = np.random.randint(-10, 10, size=(M, M), dtype=np.int32)
-    b = np.random.randint(-10, 10, size=(M, M), dtype=np.int32)
+    N = 512
+    a = np.random.randint(-10, 10, size=(N, N), dtype=np.int32)
+    b = np.random.randint(-10, 10, size=(N, N), dtype=np.int32)
     t0 = run(lambda: func(a, b))
     t1 = run(lambda: a @ b)
     print(t0, t1)

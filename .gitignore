@@ -1,0 +1,19 @@
+# Xmake cache
+.xmake/
+build/
+compile_commands.json
+
+# MacOS Cache
+.DS_Store
+
+# build artifacts
+*.so
+
+# python assets
+.venv/
+.pytest_cache/
+.cache/
+.python-version
+
+# vscode
+.vscode/

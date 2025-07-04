@@ -5,7 +5,7 @@ from timeit import repeat
 
 
 def run(
-    func: Callable[..., Any], n_warmup: int = 2, n_iters: int = 20
+    func: Callable[..., Any], n_warmup: int = 2, n_iters: int = 10
 ) -> float:
     nums = 10
     times = repeat(func, number=nums, repeat=n_iters)
@@ -13,7 +13,7 @@ def run(
 
 
 def benchmark(func: Callable[[np.ndarray, np.ndarray], np.ndarray], name: str):
-    M = 256
+    M = 1024
     a = np.random.randint(-10, 10, size=(M, M), dtype=np.int32)
     b = np.random.randint(-10, 10, size=(M, M), dtype=np.int32)
     t0 = run(lambda: func(a, b))
@@ -24,7 +24,10 @@ def benchmark(func: Callable[[np.ndarray, np.ndarray], np.ndarray], name: str):
 
 def main():
     benchmark(matmul.trivial, "trivial matmul")
-    benchmark(matmul.multithread, "multithreaded matmul")
+    benchmark(matmul.multithread, "multi-threaded matmul")
+    benchmark(matmul.chunk, "chunked matmul")
+    benchmark(matmul.simd, "SIMD matmul")
+    benchmark(matmul.multithread_simd, "multi-threaded SIMD matmul")
 
 if __name__ == "__main__":
     main()

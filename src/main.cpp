@@ -6,9 +6,30 @@ namespace py = pybind11;
 
 using T = int;
 
+// cross-platform restrict
+#ifdef __cplusplus
+#if defined(__GNUC__) || defined(__clang__)
+#define RESTRICT __restrict__
+#elif defined(_MSC_VER)
+#define RESTRICT __restrict
+#else
+#define RESTRICT
+#endif
+#else
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define RESTRICT restrict
+#elif defined(__GNUC__) || defined(__clang__)
+#define RESTRICT __restrict__
+#elif defined(_MSC_VER)
+#define RESTRICT __restrict
+#else
+#define RESTRICT
+#endif
+#endif
+
 namespace kernal{
 
-void trivial(int* a, int* b, int* c, int N, int M, int P) {
+void trivial(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < P; ++j) {
             T sum = 0;
@@ -20,13 +41,69 @@ void trivial(int* a, int* b, int* c, int N, int M, int P) {
     }
 }
 
-void multithread(int* a, int* b, int* c, int N, int M, int P) {
+void multithread(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
 #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < P; ++j) {
             T sum = 0;
             for (int k = 0; k < M; ++k) {
                 sum += a[i * M + k] * b[k * P + j];
+            }
+            c[i * P + j] = sum;
+        }
+    }
+}
+
+void chunk(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
+    const int chunk_size = 32;
+#pragma omp parallel for
+    for (int i = 0; i < N; i += chunk_size) {
+        for (int j = 0; j < P; ++j) {
+            for (int k = 0; k < M; ++k) {
+                T sum = 0;
+                for (int ii = i; ii < i + chunk_size && ii < N; ++ii) {
+                    sum += a[ii * M + k] * b[k * P + j];
+                }
+                c[i * P + j] = sum;
+            }
+        }
+    }
+}
+
+void simd(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
+    T* RESTRICT b_tr = new T[M * P];
+    for (int i = 0; i < M; ++i) {
+        for (int j = 0; j < P; ++j) {
+            b_tr[i * P + j] = b[j * M + i];
+        }
+    }
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < P; ++j) {
+            T sum = 0;
+#pragma omp simd
+            for (int k = 0; k < M; ++k) {
+                sum += a[i * M + k] * b_tr[j * P + k];
+            }
+            c[i * P + j] = sum;
+        }
+    }
+    delete[] b_tr;
+}
+
+void multithread_simd(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
+    T* RESTRICT b_tr = new T[M * P];
+    for (int i = 0; i < M; ++i) {
+        for (int j = 0; j < P; ++j) {
+            b_tr[i * P + j] = b[j * M + i];
+        }
+    }
+#pragma omp parallel for
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < P; ++j) {
+            T sum = 0;
+#pragma omp simd
+            for (int k = 0; k < M; ++k) {
+                sum += a[i * M + k] * b_tr[j * P + k];
             }
             c[i * P + j] = sum;
         }
@@ -65,5 +142,17 @@ PYBIND11_MODULE(libmatmul, m) {
 
     m.def(
         "multithread", &matmul<kernal::multithread>, "Matrix multiplication using a multithreaded implementation",
+        py::arg("a"), py::arg("b"));
+
+    m.def(
+        "chunk", &matmul<kernal::chunk>, "Matrix multiplication using a chunked implementation",
+        py::arg("a"), py::arg("b"));
+
+    m.def(
+        "simd", &matmul<kernal::simd>, "Matrix multiplication using a SIMD implementation",
+        py::arg("a"), py::arg("b"));
+
+    m.def(
+        "multithread_simd", &matmul<kernal::multithread_simd>, "Matrix multiplication using a multithreaded SIMD implementation",
         py::arg("a"), py::arg("b"));
 }

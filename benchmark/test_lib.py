@@ -7,7 +7,7 @@ from timeit import timeit
 def test_hello():
     pass
 
-def run(func):
+def check(func):
     N = 1024
     a = np.random.rand(N, N).astype(np.int32)
     b = np.random.rand(N, N).astype(np.int32)
@@ -16,13 +16,16 @@ def run(func):
     assert np.allclose(c, c_ans), "Matrix multiplication result is incorrect."
 
 def test_trivial():
-    run(matmul.trivial)
+    check(matmul.trivial)
 
 def test_multithread():
-    run(matmul.multithread)
+    check(matmul.multithread)
 
 def test_chunk():
-    run(matmul.chunk)
+    check(matmul.chunk)
+
+def test_autosimd():
+    check(matmul.auto_simd)
 
 def test_simd():
-    run(matmul.auto_simd)
+    check(matmul.simd)

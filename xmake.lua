@@ -46,7 +46,7 @@ target("matmul")
     -- 添加详细的编译信息
     on_load(function (target)
         print("Loading target: " .. target:name())
-        print("Build mode: " .. get_config("mode"))
+        print("Build mode: " .. (get_config("mode") or "release"))
         print("Architecture: " .. get_config("arch"))
         print("Platform: " .. get_config("plat"))
     end)
@@ -86,6 +86,16 @@ target("matmul")
         else
             print("✗ Failed to create shared library at: " .. linkfile)
         end
+
+        print("Running uv sync...")
+        os.exec("uv sync")
+        
+        print("Generating Python stubs...")
+        local projectdir = os.projectdir()
+        local stub_script = path.join(projectdir, "scripts", "generate_stubs.py")
+        os.exec("uv run " .. stub_script)
+        print("✓ Python stubs generated successfully")
+        
     end)
 
 -- 添加自定义任务以显示详细信息

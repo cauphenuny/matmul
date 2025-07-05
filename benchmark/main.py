@@ -30,8 +30,10 @@ def main() -> None:
         (matmul.trivial, "trivial"),
         (matmul.multithread, "multi-thread"),
         (matmul.chunk, "chunk"),
+        (matmul.multithread_chunk, "multi-thread, chunk"),
         (matmul.auto_simd, "SIMD (auto)"),
-        (matmul.multithread_simd, "multi-thread SIMD"),
+        (matmul.simd, "SIMD (manual)"),
+        (matmul.multithread_simd, "multi-thread, SIMD"),
     ]
 
     results: list[tuple[str, float, float]] = []

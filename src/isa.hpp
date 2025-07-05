@@ -2,6 +2,24 @@
 
 #include <string>
 
+// 条件包含指令集头文件
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
+
+// x86/x86_64 SIMD 指令集头文件
+#if defined(__AVX512F__) || defined(__AVX2__) || defined(__AVX__) || defined(__SSE4_2__) || \
+    defined(__SSE4_1__) || defined(__SSSE3__) || defined(__SSE3__) || defined(__SSE2__) ||  \
+    defined(__SSE__)
+#include <immintrin.h>
+#endif
+
+// 如果需要单独的 x86intrin.h (某些编译器可能需要)
+#if (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)) && \
+    defined(__GNUC__)
+#include <x86intrin.h>
+#endif
+
 namespace isa {
 
 // 获取目标指令集信息

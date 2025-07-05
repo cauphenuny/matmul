@@ -5,10 +5,9 @@
 ## Build
 
 ```
-xmake
 uv venv .venv
 uv sync
-uv run scripts/generate_stubs.py
+xmake
 ```
 
 ## Run

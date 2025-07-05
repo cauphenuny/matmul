@@ -44,6 +44,7 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pybind11" },
+    { name = "pybind11-stubgen" },
 ]
 
 [package.dev-dependencies]
@@ -55,6 +56,7 @@ dev = [
 requires-dist = [
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "pybind11", specifier = ">=2.13.6" },
+    { name = "pybind11-stubgen", specifier = ">=2.5.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -211,6 +213,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d2/c1/72b9622fcb32ff98b054f724e213c7f70d6898baa714f4516288456ceaba/pybind11-2.13.6.tar.gz", hash = "sha256:ba6af10348c12b24e92fa086b39cfba0eff619b61ac77c406167d813b096d39a", size = 218403, upload-time = "2024-09-14T00:35:22.606Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/2f/0f24b288e2ce56f51c920137620b4434a38fd80583dbbe24fc2a1656c388/pybind11-2.13.6-py3-none-any.whl", hash = "sha256:237c41e29157b962835d356b370ededd57594a26d5894a795960f0047cb5caf5", size = 243282, upload-time = "2024-09-14T00:35:20.361Z" },
+]
+
+[[package]]
+name = "pybind11-stubgen"
+version = "2.5.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/27/0bfd6cfc97a5c061d36465109f324ac4e7f9c67b90732bb24536c29325ab/pybind11_stubgen-2.5.4.tar.gz", hash = "sha256:b6bd44a6d4ba55cef80bd8af92f1f8195b1c6bb0f7bd2f6d785c9530ce6bcae9", size = 24824, upload-time = "2025-05-14T04:01:01.556Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ae/9d/236b014be46c1e75258daa672c9358ec089e6776d75499d2e4050d0fd97e/pybind11_stubgen-2.5.4-py3-none-any.whl", hash = "sha256:8625f25da48cf96eea24ba7cae673b5f49b45847b6ef01eead60c4eb762fe5c5", size = 30008, upload-time = "2025-05-14T04:01:00.275Z" },
 ]
 
 [[package]]

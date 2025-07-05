@@ -104,9 +104,9 @@ task("info")
         for _, target in pairs(project.targets()) do
             print("\n=== Target: " .. target:name() .. " ===")
             print("Kind: " .. target:kind())
-            print("Languages: " .. table.concat(target:get("languages") or {}, ", "))
-            print("Files: " .. table.concat(target:get("files") or {}, ", "))
-            print("Packages: " .. table.concat(target:get("packages") or {}, ", "))
+            print("Languages: " .. target:get("languages"))
+            print("Files: " .. target:get("files"))
+            print("Packages: " .. target:get("packages"))
         end
     end)
     set_menu {

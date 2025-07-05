@@ -2,15 +2,16 @@
 
 > Assignment for assembly course in UCAS
 
-Build
+## Build
 
 ```
 xmake
 uv venv .venv
 uv sync
+uv run scripts/generate_stubs.py
 ```
 
-Run
+## Run
 
 ```
 uv run benchmark/main.py
@@ -18,10 +19,14 @@ uv run benchmark/main.py
 
 ---
 
-|Method|Result ($N=512$)|Compare to `numpy.matmul`|
-|----|----|----|
-|trivial|120.711ms|0.70|
-|multi-thread|17.190ms|4.94|
-|chunk|9.041ms|9.19|
-|SIMD|6.984ms|11.88|
-|multi-thread, SIMD|1.791ms|48.58|
+## Benchmark
+
+($N=512$)
+
+| Method              | Time(ms) | Speedup over `np.matmul` |
+|---------------------|----------|--------------------------|
+| trivial             | 117.2691 |   0.7026x          |
+| multi-thread        |  17.5354 |   4.7365x          |
+| chunk               |  23.7355 |   3.5019x          |
+| SIMD (auto)         |   7.5846 |  11.1124x          |
+| multi-thread SIMD   |   1.8076 |  46.3657x          |

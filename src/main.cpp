@@ -1,35 +1,17 @@
+#include "isa.hpp"
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+
 using namespace pybind11::literals;
 
 namespace py = pybind11;
 
 using T = int;
 
-// cross-platform restrict
-#ifdef __cplusplus
-#if defined(__GNUC__) || defined(__clang__)
-#define RESTRICT __restrict__
-#elif defined(_MSC_VER)
-#define RESTRICT __restrict
-#else
-#define RESTRICT
-#endif
-#else
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-#define RESTRICT restrict
-#elif defined(__GNUC__) || defined(__clang__)
-#define RESTRICT __restrict__
-#elif defined(_MSC_VER)
-#define RESTRICT __restrict
-#else
-#define RESTRICT
-#endif
-#endif
+namespace kernel {
 
-namespace kernal{
-
-void trivial(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
+void trivial(const T* a, const T* b, T* c, int N, int M, int P) {
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < P; ++j) {
             T sum = 0;
@@ -41,7 +23,7 @@ void trivial(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
     }
 }
 
-void multithread(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
+void multithread(const T* a, const T* b, T* c, int N, int M, int P) {
 #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < P; ++j) {
@@ -54,9 +36,8 @@ void multithread(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int 
     }
 }
 
-void chunk(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
+void chunk(const T* a, const T* b, T* c, int N, int M, int P) {
     const int chunk_size = 32;
-#pragma omp parallel for
     for (int i = 0; i < N; i += chunk_size) {
         for (int j = 0; j < P; ++j) {
             for (int k = 0; k < M; ++k) {
@@ -70,13 +51,18 @@ void chunk(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
     }
 }
 
-void simd(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
-    T* RESTRICT b_tr = new T[M * P];
+T* transpose(const T* b, int M, int P) {
+    T* b_tr = new T[M * P];
     for (int i = 0; i < M; ++i) {
         for (int j = 0; j < P; ++j) {
             b_tr[i * P + j] = b[j * M + i];
         }
     }
+    return b_tr;
+}
+
+void auto_simd(const T* a, const T* b, T* c, int N, int M, int P) {
+    std::unique_ptr<T[]> b_tr(transpose(b, M, P));
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < P; ++j) {
             T sum = 0;
@@ -87,16 +73,19 @@ void simd(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
             c[i * P + j] = sum;
         }
     }
-    delete[] b_tr;
 }
 
-void multithread_simd(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M, int P) {
-    T* RESTRICT b_tr = new T[M * P];
-    for (int i = 0; i < M; ++i) {
-        for (int j = 0; j < P; ++j) {
-            b_tr[i * P + j] = b[j * M + i];
-        }
+void simd(const T* a, const T* b, T* c, int N, int M, int P) {
+    std::unique_ptr<T[]> b_tr(transpose(b, M, P));
+    if constexpr (isa::check::has_neon()) {
+
+    } else {
+        return auto_simd(a, b, c, N, M, P);
     }
+}
+
+void multithread_simd(const T* a, const T* b, T* c, int N, int M, int P) {
+    std::unique_ptr<T[]> b_tr(transpose(b, M, P));
 #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < P; ++j) {
@@ -110,7 +99,7 @@ void multithread_simd(T* RESTRICT a, T* RESTRICT b, T* RESTRICT c, int N, int M,
     }
 }
 
-}
+}  // namespace kernel
 
 template <auto impl> py::array_t<T> matmul(py::array_t<T> a, py::array_t<T> b) {
     auto a_shape = a.shape();
@@ -132,27 +121,43 @@ template <auto impl> py::array_t<T> matmul(py::array_t<T> a, py::array_t<T> b) {
 int add(int a, int b) { return a + b; }
 
 PYBIND11_MODULE(libmatmul, m) {
-    m.doc() = "Simple test module";
+    m.doc() = "matrix multiplication library";
 
     m.def("add", &add, "A function that adds two numbers", py::arg("a"), py::arg("b"));
 
+    // 指令集信息函数
     m.def(
-        "trivial", &matmul<kernal::trivial>, "Matrix multiplication using a trivial implementation",
-        py::arg("a"), py::arg("b"));
+        "get_target_isa", &isa::get_target_info,
+        "Get target instruction set architecture information");
+    m.def("get_compiler_info", &isa::get_compiler_info, "Get compiler information");
+    m.def("get_build_info", &isa::get_build_info, "Get build configuration information");
+    m.def("get_full_info", &isa::get_full_info, "Get complete system information");
 
-    m.def(
-        "multithread", &matmul<kernal::multithread>, "Matrix multiplication using a multithreaded implementation",
-        py::arg("a"), py::arg("b"));
+    // 指令集检查函数
+    m.def("has_sse2", &isa::check::has_sse2, "Check if SSE2 is available");
+    m.def("has_avx", &isa::check::has_avx, "Check if AVX is available");
+    m.def("has_avx2", &isa::check::has_avx2, "Check if AVX2 is available");
+    m.def("has_avx512", &isa::check::has_avx512, "Check if AVX512 is available");
+    m.def("has_neon", &isa::check::has_neon, "Check if NEON is available");
+    m.def("has_fma", &isa::check::has_fma, "Check if FMA is available");
 
-    m.def(
-        "chunk", &matmul<kernal::chunk>, "Matrix multiplication using a chunked implementation",
-        py::arg("a"), py::arg("b"));
-
-    m.def(
-        "simd", &matmul<kernal::simd>, "Matrix multiplication using a SIMD implementation",
-        py::arg("a"), py::arg("b"));
-
-    m.def(
-        "multithread_simd", &matmul<kernal::multithread_simd>, "Matrix multiplication using a multithreaded SIMD implementation",
-        py::arg("a"), py::arg("b"));
+    auto bind = [&m](const char* name, auto func, const char* desc) {
+        m.def(name, func, desc, py::arg("a"), py::arg("b"));
+    };
+    bind(
+        "trivial", &matmul<kernel::trivial>,
+        "Matrix multiplication using a trivial implementation");
+    bind(
+        "multithread", &matmul<kernel::multithread>,
+        "Matrix multiplication using a multithreaded implementation");
+    bind(
+        "auto_simd", &matmul<kernel::auto_simd>,
+        "Matrix multiplication using a SIMD implementation (auto generated by libomp)");
+    bind("chunk", &matmul<kernel::chunk>, "Matrix multiplication using a chunked implementation");
+    bind(
+        "multithread_simd", &matmul<kernel::multithread_simd>,
+        "Matrix multiplication using a multithreaded SIMD implementation");
+    bind(
+        "simd", &matmul<kernel::simd>,
+        "Matrix multiplication using a SIMD implementation (manually generated)");
 }

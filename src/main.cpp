@@ -159,7 +159,8 @@ PYBIND11_MODULE(libmatmul, m) {
     bind(
         "multithread", &matmul<kernel::multithread>,
         "Matrix multiplication using a multithreaded implementation");
-    bind("multithread_chunk", &matmul<kernel::multithread_chunk>,
+    bind(
+        "multithread_chunk", &matmul<kernel::multithread_chunk>,
         "Matrix multiplication using a multithreaded chunked implementation");
     bind(
         "auto_simd", &matmul<kernel::auto_simd>,

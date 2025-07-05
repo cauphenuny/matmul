@@ -1,7 +1,8 @@
 add_rules("mode.debug", "mode.release")
-add_rules("plugin.compile_commands.autoupdate")
+-- add_rules("plugin.compile_commands.autoupdate")
 
 add_requires("pybind11", {system = false, configs = {python = "python3"}})
+add_requires("python 3.x", {system = false})
 add_requires("openmp")
 
 -- 设置详细输出模式
@@ -35,6 +36,7 @@ target("matmul")
     set_languages("c99", "c++17")
     add_files("src/*.cpp")
     add_packages("pybind11")
+    add_packages("python")
     add_cxxflags("-fopenmp")
     add_ldflags("-fopenmp")
     add_shflags("-fopenmp")

@@ -5,9 +5,7 @@
 ## Build
 
 ```
-uv venv .venv
-uv sync
-xmake
+xmake # depends on uv the python package manager
 ```
 
 ## Run

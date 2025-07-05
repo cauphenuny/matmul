@@ -11,6 +11,7 @@ compile_commands.json
 
 # python assets
 .venv/
+.venv*/
 .pytest_cache/
 .cache/
 .python-version

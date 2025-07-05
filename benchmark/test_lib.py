@@ -9,8 +9,8 @@ def test_hello():
 
 def check(func):
     N = 1024
-    a = np.random.rand(N, N).astype(np.int32)
-    b = np.random.rand(N, N).astype(np.int32)
+    a = np.random.randint(-10, 10, size=(N, N)).astype(np.int32)
+    b = np.random.randint(-10, 10, size=(N, N)).astype(np.int32)
     c = func(a, b)
     c_ans = np.matmul(a, b)
     assert np.allclose(c, c_ans), "Matrix multiplication result is incorrect."

@@ -3,6 +3,7 @@ from typing import Any, Callable, TypeAlias
 import numpy as np
 from timeit import repeat
 from numpy.typing import NDArray
+import argparse
 
 # Type aliases
 IntArray: TypeAlias = NDArray[np.int32]
@@ -15,7 +16,7 @@ def run(func: Callable[..., Any], n_warmup: int = 1, n_iters: int = 5) -> float:
     return np.mean(times[n_warmup:]).item() / nums
 
 
-def benchmark(func: MatmulFunc, name: str, N: int = 1024) -> float:
+def benchmark(func: MatmulFunc, name: str, N: int = 512) -> float:
     print(f"benchmarking {name} with N={N}...", end=" ")
     a = np.random.randint(-10, 10, size=(N, N), dtype=np.int32)
     b = np.random.randint(-10, 10, size=(N, N), dtype=np.int32)
@@ -25,6 +26,12 @@ def benchmark(func: MatmulFunc, name: str, N: int = 1024) -> float:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Matrix multiplication benchmark")
+    parser.add_argument("--size", type=int, default=512,
+                        help="Size of the matrices (default: 512)")
+    args = parser.parse_args()
+
     funcs: list[tuple[MatmulFunc, str]] = [
         (np.matmul, "numpy"),
         (matmul.trivial, "trivial"),
@@ -39,7 +46,7 @@ def main() -> None:
     results: list[tuple[str, float, float]] = []
 
     for func, name in funcs:
-        time_ms = benchmark(func, name, 1024)
+        time_ms = benchmark(func, name, args.size)
         results.append((name, time_ms, 0.0))
     
     for i, (name, time_ms, _) in enumerate(results):

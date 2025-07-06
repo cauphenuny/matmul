@@ -1,19 +1,98 @@
 #pragma once
 
-#include "isa.hpp"
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
+
+#if defined(__ARM_FEATURE_SME)
+#include <arm_sme.h>
+#else
+#define __arm_streaming
+#endif
+
+#include "typedef.h"
 
 #include <memory>
-
-using T = int;
 
 namespace kernel {
 
 T* transpose(const T* b, int M, int P);
-void auto_simd(const T* a, const T* b, T* c, int N, int M, int P);
+
+inline void auto_simd(const T* a, const T* b, T* c, int N, int M, int P) {
+    memset(c, 0, N * P * sizeof(T));
+    std::unique_ptr<T[]> b_tr(transpose(b, M, P));
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < P; ++j) {
+            T sum = 0;
+#pragma omp simd
+            for (int k = 0; k < M; ++k) {
+                sum += a[i * M + k] * b_tr[j * M + k];
+            }
+            c[i * P + j] = sum;
+        }
+    }
+}
+
+inline void multithread_simd(const T* a, const T* b, T* c, int N, int M, int P) {
+    memset(c, 0, N * P * sizeof(T));
+    std::unique_ptr<T[]> b_tr(transpose(b, M, P));
+#pragma omp parallel for
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < P; ++j) {
+            T sum = 0;
+#pragma omp simd
+            for (int k = 0; k < M; ++k) {
+                sum += a[i * M + k] * b_tr[j * M + k];
+            }
+            c[i * P + j] = sum;
+        }
+    }
+}
 
 inline void simd(const T* a, const T* b, T* c, int N, int M, int P) {
+    memset(c, 0, N * P * sizeof(T));
     std::unique_ptr<T[]> b_tr(transpose(b, M, P));
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    const int simd_width = 4;
 
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < P; ++j) {
+            int32x4_t sum_vec = vdupq_n_s32(0);
+            int k = 0;
+
+            // 处理完整的SIMD向量
+            for (; k <= M - simd_width; k += simd_width) {
+                int32x4_t a_vec = vld1q_s32(&a[i * M + k]);
+                int32x4_t b_vec = vld1q_s32(&b_tr[j * M + k]);
+                sum_vec = vmlaq_s32(sum_vec, a_vec, b_vec);
+            }
+
+            // 水平求和
+            T sum = vaddvq_s32(sum_vec);
+
+            // 处理剩余的标量元素
+            for (; k < M; ++k) {
+                sum += a[i * M + k] * b_tr[j * M + k];
+            }
+
+            c[i * P + j] = sum;
+        }
+    }
+#else
+    return auto_simd(a, b, c, N, M, P);
+#endif
+}
+
+inline void simd_arm_sme(const T* a, const T* b, T* c, int N, int M, int P) {
+    auto_simd(a, b, c, N, M, P);
+}
+
+inline void simd_optimized(const T* a, const T* b, T* c, int N, int M, int P) {
+    if (N < 64 || M < 64 || P < 64) {
+        return simd(a, b, c, N, M, P);
+    }
+    memset(c, 0, N * P * sizeof(T));
+    std::unique_ptr<T[]> b_tr(transpose(b, M, P));
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
     const int simd_width = 4;
     const int unroll_factor = 8;

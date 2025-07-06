@@ -1,0 +1,12 @@
+﻿方法,执行时间(ms),加速比,相对性能
+"SIMD, multi-thread",1514.31,171.41x,0.1%
+SIMD (optimized),4162.37,62.36x,0.0%
+SIMD (auto),4165.21,62.32x,0.0%
+transpose matrix B,4177.33,62.14x,0.0%
+transpose loop iter,4244.64,61.15x,0.0%
+multi-thread,6127.78,42.36x,0.0%
+chunk,8381.05,30.97x,0.0%
+"chunk, multi-thread",8694.77,29.85x,0.0%
+SIMD (manual),11850.11,21.90x,0.0%
+trivial,211787.51,1.23x,0.0%
+numpy,259570.58,1.00x,0.0%

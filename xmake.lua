@@ -1,13 +1,19 @@
 add_rules("mode.debug", "mode.release")
 -- add_rules("plugin.compile_commands.autoupdate")
 
+-- 添加配置选项
+option("enable_sme")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable ARM SME (Scalable Matrix Extensions) support")
+option_end()
+
 add_requires("pybind11", {system = false, configs = {python = "python3"}})
 add_requires("python 3.x", {system = false})
 add_requires("openmp")
 
 -- 设置详细输出模式
 set_policy("build.warning", true)
-set_policy("build.optimization.lto", false)
 set_warnings("all")
 
 -- 在调试模式下添加更多调试信息
@@ -42,6 +48,19 @@ target("matmul")
     add_shflags("-fopenmp")
     set_policy("build.warning", true)
     
+    -- 根据配置选择编译器优化参数
+    if has_config("enable_sme") then
+        -- 强制启用 SME 支持（用于开发测试）
+        add_cxflags("-march=native+sme", {force = true})
+        add_asflags("-march=native+sme", {force = true})
+        add_defines("FORCE_SME_SUPPORT")
+        print("SME support enabled (forced)")
+    else
+        -- 使用 native 优化
+        add_cxflags("-march=native")
+        print("Using native optimization")
+    end
+    
     -- 添加系统 Python 配置
     add_rules("python.library", {soabi = true})
     
@@ -51,6 +70,36 @@ target("matmul")
         print("Build mode: " .. (get_config("mode") or "release"))
         print("Architecture: " .. get_config("arch"))
         print("Platform: " .. get_config("plat"))
+        
+    end)
+
+    on_config(function (target)
+        -- 输出编译器信息
+        local cc = target:tool("cc")
+        local cxx = target:tool("cxx")
+        local ld = target:tool("ld")
+        
+        print("Compiler information:")
+        if cc then
+            print("  - C Compiler: " .. cc)
+        end
+        if cxx then
+            print("  - C++ Compiler: " .. cxx)
+        end
+        if ld then
+            print("  - Linker: " .. ld)
+        end
+        
+        -- 输出编译器版本
+        if cxx then
+            local version = os.iorunv(cxx, {"--version"})
+            if version then
+                local first_line = version:match("([^\n]*)")
+                if first_line then
+                    print("  - Compiler Version: " .. first_line)
+                end
+            end
+        end
     end)
     
     before_build(function (target)

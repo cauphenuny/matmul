@@ -8,11 +8,18 @@ def test_hello():
     pass
 
 def check(func):
-    N = 1024
-    a = np.random.randint(-10, 10, size=(N, N)).astype(np.int32)
-    b = np.random.randint(-10, 10, size=(N, N)).astype(np.int32)
+    a = np.array([
+        [1, 2, 3, 4], [5, 6, 7, 8]
+    ])
+    b = np.array([
+        [1, 2], [3, 4], [5, 6], [7, 8]
+    ])
+    # a = np.array([[1, 2, 3, 4]])
+    # b = np.array([[1], [2], [3], [4]])
     c = func(a, b)
     c_ans = np.matmul(a, b)
+    print(f"Result:\n{c}")
+    print(f"Expected:\n{c_ans}")
     assert np.allclose(c, c_ans), "Matrix multiplication result is incorrect."
 
 def test_trivial():
@@ -29,3 +36,20 @@ def test_autosimd():
 
 def test_simd():
     check(matmul.simd)
+
+def test_transpose():
+    check(matmul.transpose)
+
+def test_simd_optimized():
+    check(matmul.simd_optimized)
+    pass
+
+if __name__ == "__main__":
+    test_hello()
+    test_trivial()
+    test_multithread()
+    test_chunk()
+    test_transpose()
+    test_autosimd()
+    test_simd()
+    test_simd_optimized()

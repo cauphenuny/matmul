@@ -11,22 +11,31 @@ xmake # depends on uv the python package manager
 ## Run
 
 ```
-uv run benchmark/main.py
+uv run benchmark/main.py --help
 ```
 
 ---
 
 ## Benchmark
 
-($N=1024$)
+```
+Speedup over numpy (size=4096):
+  numpy              : 1.0000x
+  trivial            : 1.1768x
+  transpose loop iter: 57.1368x
+  multi-thread       : 41.0148x
+  chunk              : 31.3374x
+  chunk, multi-thread: 33.7665x
+  transpose matrix B : 57.6803x
+  SIMD (auto)        : 61.9894x
+  SIMD (manual)      : 21.9424x
+  SIMD (optimized)   : 62.3928x
+  SIMD, multi-thread : 164.1845x
+```
 
-| Method              | Time(ms) | Speedup over `np.matmul` |
-|---------------------|----------|--------------------------|
-| numpy               | 974.9938 |   1.0000x                |
-| trivial             | 852.5763 |   1.1436x                |
-| multi-thread        | 221.4695 |   4.4024x                |
-| chunk               | 236.0463 |   4.1305x                |
-| chunk, multi-thread |  91.8529 |  10.6147x                |
-| SIMD (auto)         |  59.2121 |  16.4661x                |
-| SIMD (manual)       |  55.7972 |  17.4739x                |
-| SIMD, multi-thread  |  15.1485 |  64.3623x                |
+![perf.png](report/performance_comparison.png)
+
+![opteq.png](report/optimization_technique_analysis.png)
+
+![speedup.png](report/speedup_analysis.png)
+

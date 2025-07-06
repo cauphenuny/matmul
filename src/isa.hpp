@@ -7,6 +7,11 @@
 #include <arm_neon.h>
 #endif
 
+// ARM SME 指令集头文件
+#if defined(__ARM_FEATURE_SME)
+#include <arm_sme.h>
+#endif
+
 // x86/x86_64 SIMD 指令集头文件
 #if defined(__AVX512F__) || defined(__AVX2__) || defined(__AVX__) || defined(__SSE4_2__) || \
     defined(__SSE4_1__) || defined(__SSSE3__) || defined(__SSE3__) || defined(__SSE2__) ||  \
@@ -79,6 +84,12 @@ inline std::string get_target_info() {
 // ARM SIMD 指令集检测
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
     info += "NEON ";
+    has_simd = true;
+#endif
+
+// ARM SME 指令集检测
+#if defined(__ARM_FEATURE_SME)
+    info += "SME ";
     has_simd = true;
 #endif
 
@@ -187,6 +198,14 @@ inline constexpr bool has_avx512() {
 
 inline constexpr bool has_neon() {
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline constexpr bool has_sme() {
+#if defined(__ARM_FEATURE_SME)
     return true;
 #else
     return false;
